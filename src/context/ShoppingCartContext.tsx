@@ -1,4 +1,6 @@
 import { createContext, useContext, ReactNode, useState } from "react";
+import { ShoppingCart } from "../components/ShoppingCart";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 type ShoppingCartProviderProps = {
   children: ReactNode;
@@ -9,8 +11,12 @@ type ShoppingCartContext = {
   increaseCartQuantity: (id: number) => void;
   decreaseCartQuantity: (id: number) => void;
   removeFromCart: (id: number) => void;
+  openCart: ()=>void
+  closeCart: ()=>void 
+  cartQuantity: number
+  cartItems : CartItem[]
 };
-type cartItem = {
+type CartItem = {
   id: number;
   quantity: number;
 };
@@ -21,10 +27,14 @@ export function useShoppingCart() {
 }
 
 export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
-  const [cartItems, SetCartItems] = useState<cartItem[]>([]); // initial value as emply array
+  //const [cartItems, SetCartItems] = useState<CartItem[]>([]); // initial value as emply array
   //give the stateful value and a function to update the value
   //the the returned value us a array of cartItem
-
+  const [isOpen,setIsOpen] = useState(false);
+  const [cartItems, SetCartItems] = useLocalStorage<CartItem[]>("shopping-cart",[]); // initial value as shopping cart
+  const openCart = () => setIsOpen(true)
+  const closeCart = () => setIsOpen(false)
+  
   function getItemQuantity(id: number) {
     cartItems.find((item) => item.id === id)?.quantity || 0;
     //in cartItems find where
@@ -36,7 +46,7 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
       //return currentItem such that
       if (currCartItems.find((item) => item.id === id) == null) {
         return [...currCartItems, { id, quantity: 1 }];
-        //return array with all the current item and a new item
+        //return array with all the current item and add a new item with quantity as 1
       } else {
         return currCartItems.map((item) => {
           if (item.id === id) {
@@ -76,11 +86,28 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
     });
   }
 
+ const cartQuantity = cartItems.reduce( //uses the reduce method to get the total quantity
+  (quantity,item)=>item.quantity + quantity, 
+  0 //sets the initial value to 0
+ )
   return (
-    <ShoppingCartContext.Provider
-      value={{ getItemQuantity, increaseCartQuantity, decreaseCartQuantity, removeFromCart }}
+    <ShoppingCartContext.Provider value=
+      {
+        { 
+          getItemQuantity,
+          increaseCartQuantity, 
+          decreaseCartQuantity, 
+          removeFromCart,
+          cartItems,
+          cartQuantity,
+          openCart,
+          closeCart
+        }
+      }
     >
       {children}
+
+      <ShoppingCart isOpen ={isOpen}/>
     </ShoppingCartContext.Provider>
   );
 }
