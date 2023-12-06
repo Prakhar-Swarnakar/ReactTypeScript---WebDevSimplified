@@ -6,7 +6,7 @@ type ShoppingCartProviderProps = {
   children: ReactNode;
 };
 
-type ShoppingCartContext = {
+interface ShoppingCartContext {
   getItemQuantity: (id: number) => number;
   increaseCartQuantity: (id: number) => void;
   decreaseCartQuantity: (id: number) => void;
@@ -20,11 +20,23 @@ type CartItem = {
   id: number;
   quantity: number;
 };
-const ShoppingCartContext = createContext({});
+const shoppingCartContext: ShoppingCartContext = {
+  getItemQuantity: () => 0,
+  increaseCartQuantity: () => {},
+  decreaseCartQuantity: () => {},
+  removeFromCart: () => {},
+  openCart: () => {},
+  closeCart: () => {},
+  cartQuantity: 0,
+  cartItems: []
+};
+const ShoppingCartContext = createContext<ShoppingCartContext>(shoppingCartContext);
 
 export function useShoppingCart() {
   return useContext(ShoppingCartContext);
 }
+
+// export const useShoppingCart = () => React.useContext(ShoppingCartContext);
 
 export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
   //const [cartItems, SetCartItems] = useState<CartItem[]>([]); // initial value as emply array
@@ -35,13 +47,13 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
   const openCart = () => setIsOpen(true)
   const closeCart = () => setIsOpen(false)
   
-  function getItemQuantity(id: number) {
-    cartItems.find((item) => item.id === id)?.quantity || 0;
+  function getItemQuantity(id: number): number {
+    return cartItems.find((item) => item.id === id)?.quantity || 0;
     //in cartItems find where
     // if it exist then give its qunatity or 0
   }
 
-  function increaseCartQuantity(id: number) {
+  function increaseCartQuantity(id: number) : void {
     SetCartItems((currCartItems) => {
       //return currentItem such that
       if (currCartItems.find((item) => item.id === id) == null) {
@@ -59,16 +71,16 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
     });
   }
 
-  function removeFromCart(id: number) {
+  function removeFromCart(id: number) : void {
     SetCartItems((currCartItems) =>{
       return currCartItems.filter((item) => item.id !== id); 
       //how do we know that this will be a list of cart items whereas 
       //above it will give a single item
       //doubt: why curr item is being used ... ask
-  });
+    });
   }
 
-  function decreaseCartQuantity(id: number) {
+  function decreaseCartQuantity(id: number): void {
     SetCartItems((currItem) => {
       //return currentItem such that
       if (currItem.find((item) => item.id === id)?.quantity === 1) {
@@ -86,27 +98,24 @@ export function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
     });
   }
 
- const cartQuantity = cartItems.reduce( //uses the reduce method to get the total quantity
-  (quantity,item)=>item.quantity + quantity, 
-  0 //sets the initial value to 0
- )
-  return (
-    <ShoppingCartContext.Provider value=
-      {
-        { 
-          getItemQuantity,
-          increaseCartQuantity, 
-          decreaseCartQuantity, 
-          removeFromCart,
-          cartItems,
-          cartQuantity,
-          openCart,
-          closeCart
-        }
-      }
-    >
-      {children}
+  const cartQuantity = cartItems.reduce( //uses the reduce method to get the total quantity
+    (quantity,item)=>item.quantity + quantity, 0 //sets the initial value to 0
+  )
 
+ const value = { 
+      getItemQuantity,
+      increaseCartQuantity, 
+      decreaseCartQuantity, 
+      removeFromCart,
+      cartItems,
+      cartQuantity,
+      openCart,
+      closeCart
+    }
+
+  return (
+    <ShoppingCartContext.Provider value={value}>
+      {children}
       <ShoppingCart isOpen ={isOpen}/>
     </ShoppingCartContext.Provider>
   );
